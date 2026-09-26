@@ -1,0 +1,122 @@
+[
+  {
+    "timestamp": "2026-09-26T15:38:48.344Z",
+    "action": "TOKEN_GENERATED",
+    "details": {
+      "tokenNumber": 1,
+      "priority": 0
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:38:48.355Z",
+    "action": "TOKEN_GENERATED",
+    "details": {
+      "tokenNumber": 2,
+      "priority": 1
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:38:48.361Z",
+    "action": "TOKEN_GENERATED",
+    "details": {
+      "tokenNumber": 3,
+      "priority": 0
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:38:48.367Z",
+    "action": "TOKEN_CALLED",
+    "details": {
+      "tokenNumber": 2,
+      "room": "Room 101"
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:38:48.374Z",
+    "action": "TOKEN_RECALLED",
+    "details": {
+      "tokenNumber": 2
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:38:48.380Z",
+    "action": "TOKEN_CALLED",
+    "details": {
+      "tokenNumber": 1,
+      "room": "Room 101"
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:38:48.387Z",
+    "action": "TOKEN_SKIPPED",
+    "details": {
+      "tokenNumber": 1,
+      "reason": "no_show"
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:40:30.868Z",
+    "action": "MANUAL_QUEUE_RESET",
+    "details": {}
+  },
+  {
+    "timestamp": "2026-09-26T15:40:30.880Z",
+    "action": "TOKEN_GENERATED",
+    "details": {
+      "tokenNumber": 1,
+      "priority": 0
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:40:30.889Z",
+    "action": "TOKEN_GENERATED",
+    "details": {
+      "tokenNumber": 2,
+      "priority": 1
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:40:30.895Z",
+    "action": "TOKEN_GENERATED",
+    "details": {
+      "tokenNumber": 3,
+      "priority": 0
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:40:30.901Z",
+    "action": "TOKEN_CALLED",
+    "details": {
+      "tokenNumber": 2,
+      "room": "Room 101"
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:40:30.908Z",
+    "action": "TOKEN_RECALLED",
+    "details": {
+      "tokenNumber": 2
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:40:30.914Z",
+    "action": "TOKEN_CALLED",
+    "details": {
+      "tokenNumber": 1,
+      "room": "Room 101"
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:40:30.922Z",
+    "action": "TOKEN_SKIPPED",
+    "details": {
+      "tokenNumber": 1,
+      "reason": "no_show"
+    }
+  },
+  {
+    "timestamp": "2026-09-26T15:40:45.082Z",
+    "action": "MANUAL_QUEUE_RESET",
+    "details": {}
+  }
+]

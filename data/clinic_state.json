@@ -1,0 +1,12 @@
+{
+  "config": {
+    "isPaused": false,
+    "avgConsultMinutes": 5,
+    "doctorName": "Dr. Sarah Mitchell",
+    "roomNumber": "Room 101",
+    "clinicName": "Apex Health Clinic"
+  },
+  "tokens": [],
+  "nextTokenNumber": 1,
+  "lastResetDate": "2026-09-26"
+}
