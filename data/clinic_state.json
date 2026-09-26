@@ -2,9 +2,9 @@
   "config": {
     "isPaused": false,
     "avgConsultMinutes": 5,
-    "doctorName": "Dr. Sarah Mitchell",
+    "doctorName": "Dr. Abdul Muqeet",
     "roomNumber": "Room 101",
-    "clinicName": "Apex Health Clinic"
+    "clinicName": "Dr. Abdul Muqeet Clinic"
   },
   "tokens": [],
   "nextTokenNumber": 1,

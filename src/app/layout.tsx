@@ -2,7 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Apex Clinic | Real-time Queue & Token System',
+  title: 'Dr. Abdul Muqeet Clinic | Queue & Token Management System',
   description: 'Smart queue management for patients, doctors, and waiting room TV screens',
 };
 

@@ -20,7 +20,12 @@ export function setupSocketHandlers(io: Server) {
     });
 
     // Patient requests new token
-    socket.on('patient:generate_token', (data: { patientName?: string; priority?: number }, callback) => {
+    socket.on('patient:generate_token', (data: { 
+      patientName: string; 
+      phoneNumber: string; 
+      department?: string; 
+      priority?: number 
+    }, callback) => {
       try {
         const state = queueService.getState();
         if (state.config.isPaused) {
@@ -28,7 +33,25 @@ export function setupSocketHandlers(io: Server) {
           return;
         }
 
-        const result = queueService.generateToken(data?.patientName, data?.priority || 0);
+        // Validate name
+        const cleanName = (data?.patientName || '').trim();
+        if (!cleanName || cleanName.length < 2) {
+          if (callback) callback({ success: false, error: 'Please enter a valid patient name (minimum 2 characters).' });
+          return;
+        }
+
+        // Validate 11-digit phone number
+        const cleanPhone = (data?.phoneNumber || '').replace(/\D/g, '');
+        if (cleanPhone.length !== 11) {
+          if (callback) callback({ 
+            success: false, 
+            error: 'Phone number must be exactly 11 digits (e.g., 03001234567).' 
+          });
+          return;
+        }
+
+        const dept = data?.department?.trim() || 'General Consultation';
+        const result = queueService.generateToken(cleanName, cleanPhone, dept, data?.priority || 0);
         
         // Broadcast new queue state to all screens
         io.emit('queue:state', queueService.getState());
@@ -41,9 +64,36 @@ export function setupSocketHandlers(io: Server) {
             estimatedWaitMinutes: result.estimatedWaitMinutes,
           });
         }
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : 'Internal server error';
+        console.error('Error generating token:', errMsg);
+        if (callback) callback({ success: false, error: errMsg });
+      }
+    });
+
+    // Patient cancels their active token
+    socket.on('patient:cancel_token', (data: { tokenId: string }, callback) => {
+      try {
+        if (!data?.tokenId) {
+          if (callback) callback({ success: false, error: 'Token ID is required.' });
+          return;
+        }
+
+        const cancelled = queueService.cancelToken(data.tokenId);
+        if (!cancelled) {
+          if (callback) callback({ success: false, error: 'Token not found or already completed.' });
+          return;
+        }
+
+        // Broadcast updated state
+        io.emit('queue:state', queueService.getState());
+
+        if (callback) {
+          callback({ success: true, token: cancelled });
+        }
       } catch (err) {
-        console.error('Error generating token:', err);
-        if (callback) callback({ success: false, error: 'Internal server error' });
+        console.error('Error cancelling token:', err);
+        if (callback) callback({ success: false, error: 'Failed to cancel token' });
       }
     });
 
@@ -153,11 +203,18 @@ export function setupSocketHandlers(io: Server) {
     socket.on('admin:simulate_patients', (data: { count?: number }, callback) => {
       try {
         const count = Math.min(data?.count || 10, 50);
-        const demoNames = ['James Wilson', 'Emma Watson', 'Liam Johnson', 'Olivia Davis', 'Noah Brown', 'Sophia Miller', 'Lucas Garcia', 'Ava Martinez', 'Ethan Robinson', 'Mia Clark'];
+        const demoNames = [
+          'James Wilson', 'Emma Watson', 'Liam Johnson', 'Olivia Davis', 
+          'Noah Brown', 'Sophia Miller', 'Lucas Garcia', 'Ava Martinez', 
+          'Ethan Robinson', 'Mia Clark'
+        ];
+        const depts = ['General Consultation', 'General Physician', 'Routine Checkup', 'Pediatric Care'];
         for (let i = 0; i < count; i++) {
           const randomName = demoNames[i % demoNames.length] + ' ' + (Math.floor(Math.random() * 90) + 10);
+          const randomPhone = `0300${Math.floor(1000000 + Math.random() * 9000000)}`;
           const priority = (i === 3 || i === 7) ? 1 : 0;
-          queueService.generateToken(randomName, priority);
+          const dept = depts[i % depts.length];
+          queueService.generateToken(randomName, randomPhone, dept, priority);
         }
         io.emit('queue:state', queueService.getState());
         if (callback) callback({ success: true, added: count });

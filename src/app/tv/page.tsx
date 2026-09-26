@@ -9,11 +9,13 @@ import {
   VolumeX, 
   Maximize2, 
   Clock, 
+  Calendar,
   Users, 
   Activity, 
   BellRing,
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  Building2
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -23,20 +25,24 @@ export default function TVDisplayPage() {
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
+  const [dayOfWeek, setDayOfWeek] = useState<string>('');
   const [isFlashing, setIsFlashing] = useState(false);
   const [lastAnnouncement, setLastAnnouncement] = useState<string | null>(null);
 
   const socketRef = useRef(getSocket());
 
-  // Clock
+  // High-precision live clock and calendar date
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
       setCurrentTime(
-        now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
       );
       setCurrentDate(
-        now.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })
+        now.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })
+      );
+      setDayOfWeek(
+        now.toLocaleDateString([], { weekday: 'long' })
       );
     };
     updateTime();
@@ -105,6 +111,9 @@ export default function TVDisplayPage() {
     .filter((t) => !nowServing || t.id !== nowServing.id)
     .slice(0, 4);
 
+  const clinicName = queueState?.config.clinicName || 'Dr. Abdul Muqeet Clinic';
+  const doctorName = queueState?.config.doctorName || 'Dr. Abdul Muqeet';
+
   return (
     <div 
       onClick={!audioEnabled ? handleEnableAudio : undefined}
@@ -120,8 +129,9 @@ export default function TVDisplayPage() {
         </div>
       )}
 
-      {/* TOP HEADER BAR */}
-      <header className="px-6 lg:px-12 py-5 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md">
+      {/* TOP HEADER BAR WITH PROMINENT DATE & TIME */}
+      <header className="px-6 lg:px-12 py-5 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md">
+        {/* Left: Clinic Identity */}
         <div className="flex items-center gap-4">
           <Link
             href="/"
@@ -133,30 +143,43 @@ export default function TVDisplayPage() {
           </Link>
           <div className="h-6 w-px bg-slate-700 hidden sm:block" />
           <div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              <Activity className="w-6 h-6 text-emerald-400" />
-              <span>{queueState?.config.clinicName || 'Apex Health Clinic'}</span>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2.5">
+              <Activity className="w-7 h-7 text-emerald-400" />
+              <span>{clinicName}</span>
             </h1>
             <p className="text-xs text-slate-400 font-medium mt-0.5">
-              Waiting Hall Display • Live Queue Broadcast
+              Waiting Hall Display • Consultant: <span className="text-slate-200 font-semibold">{doctorName}</span>
             </p>
           </div>
         </div>
 
-        {/* CLOCK & CONTROLS */}
+        {/* Right: Prominent Date, Time, and TV Controls */}
         <div className="flex items-center gap-6">
-          {/* Live Clock */}
-          <div className="text-right">
-            <div className="text-2xl sm:text-3xl font-mono font-black tracking-wider text-emerald-400">
-              {currentTime || '--:--:--'}
+          {/* Prominent High-Contrast Date & Live Clock Panel */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl px-5 py-2.5 text-right shadow-inner flex items-center gap-4">
+            <div className="text-right border-r border-slate-800 pr-4 hidden sm:block">
+              <div className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center justify-end gap-1.5">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>{dayOfWeek || 'Today'}</span>
+              </div>
+              <div className="text-xs text-slate-300 font-medium mt-0.5">
+                {currentDate || 'Loading date...'}
+              </div>
             </div>
-            <div className="text-xs text-slate-400 font-medium">
-              {currentDate}
+
+            <div className="text-right">
+              <div className="text-2xl sm:text-3xl font-mono font-black tracking-wider text-white flex items-center justify-end gap-1.5">
+                <Clock className="w-5 h-5 text-emerald-400 hidden xs:inline" />
+                <span>{currentTime || '--:--:--'}</span>
+              </div>
+              <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                Live Standard Time
+              </div>
             </div>
           </div>
 
           {/* Quick TV Control Buttons */}
-          <div className="flex items-center gap-2 pl-4 border-l border-slate-800">
+          <div className="flex items-center gap-2 pl-2">
             <button
               onClick={handleEnableAudio}
               className={`p-2.5 rounded-xl border transition ${
@@ -198,7 +221,7 @@ export default function TVDisplayPage() {
                 ? 'border-emerald-400 shadow-emerald-500/30 ring-4 ring-emerald-500/20' 
                 : 'border-slate-800'
             }`}>
-              {/* Subtle Ambient Glow */}
+              {/* Ambient Glow */}
               <div className="absolute -top-24 -left-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
               {/* Sub-header */}
@@ -210,12 +233,12 @@ export default function TVDisplayPage() {
                   </span>
                 </div>
                 <div className="px-4 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-xs sm:text-sm font-bold text-slate-300">
-                  {queueState?.config.doctorName || 'Dr. Mitchell'}
+                  {doctorName}
                 </div>
               </div>
 
               {/* GIANT TOKEN DISPLAY */}
-              <div className="py-8 sm:py-16 text-center relative z-10">
+              <div className="py-8 sm:py-14 text-center relative z-10">
                 {nowServing ? (
                   <div>
                     <span className="text-xs uppercase font-extrabold tracking-widest text-slate-400 block mb-2">
@@ -225,6 +248,18 @@ export default function TVDisplayPage() {
                       <span className="text-8xl sm:text-9xl md:text-[11rem] font-black tracking-tighter text-white drop-shadow-2xl">
                         {nowServing.tokenNumber}
                       </span>
+                    </div>
+
+                    {/* Patient Name & Department Pill */}
+                    <div className="mt-3 flex items-center justify-center gap-3">
+                      <span className="text-xl font-bold text-slate-200">
+                        {nowServing.patientName}
+                      </span>
+                      {nowServing.department && (
+                        <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                          {nowServing.department}
+                        </span>
+                      )}
                     </div>
 
                     {/* Room Destination Banner */}
@@ -284,8 +319,8 @@ export default function TVDisplayPage() {
                               Token {token.tokenNumber}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-400 mt-0.5 font-medium">
-                            {token.doctorRoom || queueState?.config.roomNumber || 'Room 101'}
+                          <p className="text-xs text-slate-300 mt-0.5 font-medium">
+                            {token.patientName} • <span className="text-slate-400">{token.department || 'General'}</span>
                           </p>
                         </div>
 
@@ -327,7 +362,7 @@ export default function TVDisplayPage() {
 
       {/* FOOTER TICKER */}
       <footer className="px-6 lg:px-12 py-3 bg-slate-900 border-t border-slate-800 text-center text-xs text-slate-500 flex items-center justify-between">
-        <span>Apex Clinic Smart Queue System • Real-Time Broadcast</span>
+        <span>{clinicName} • Real-Time Broadcast</span>
         <span className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400' : 'bg-rose-500'}`} />
           {isConnected ? 'TV Screen Synchronized' : 'Connecting to Server...'}

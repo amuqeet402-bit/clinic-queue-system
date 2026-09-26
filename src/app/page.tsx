@@ -56,10 +56,10 @@ export default function HomePortal() {
             </div>
             <div>
               <h1 className="text-lg font-black tracking-tight text-white">
-                Apex Clinic Queue Suite
+                Dr. Abdul Muqeet Clinic
               </h1>
               <p className="text-xs text-slate-400">
-                Real-Time Token & Waiting Room Orchestration
+                Real-Time Token & Queue Management System
               </p>
             </div>
           </div>

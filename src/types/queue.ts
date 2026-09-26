@@ -1,10 +1,12 @@
-export type TokenStatus = 'waiting' | 'serving' | 'completed' | 'skipped' | 'no_show';
+export type TokenStatus = 'waiting' | 'serving' | 'completed' | 'skipped' | 'no_show' | 'cancelled';
 
 export interface Token {
   id: string;
   tokenNumber: number; // Sequential integer: 1, 2, 3...
-  patientName?: string;
-  priority: number; // 0 = standard, 1 = high/elderly/emergency
+  patientName: string;
+  phoneNumber: string; // 11-digit validated phone number
+  department: string;  // e.g. 'General Consultation', 'General Physician', etc.
+  priority: number;    // 0 = standard, 1 = high/urgent
   status: TokenStatus;
   createdAt: number;
   calledAt?: number;

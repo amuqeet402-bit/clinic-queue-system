@@ -37,12 +37,12 @@ class QueueService {
       config: {
         isPaused: false,
         avgConsultMinutes: 5,
-        doctorName: 'Dr. Sarah Mitchell',
+        doctorName: 'Dr. Abdul Muqeet',
         roomNumber: 'Room 101',
-        clinicName: 'Apex Health Clinic',
+        clinicName: 'Dr. Abdul Muqeet Clinic',
       },
       tokens: [],
-      nextTokenNumber: 1, // Simple sequential integers (1, 2, 3...)
+      nextTokenNumber: 1, // Sequential integers: 1, 2, 3...
       lastResetDate: this.getTodayString(),
     };
   }
@@ -52,14 +52,25 @@ class QueueService {
       if (fs.existsSync(STATE_FILE)) {
         const raw = fs.readFileSync(STATE_FILE, 'utf-8');
         const parsed = JSON.parse(raw);
-        return {
+        const mergedConfig = {
+          ...this.getDefaultState().config,
+          ...(parsed.config || {})
+        };
+        // Auto-migrate legacy clinic name if needed
+        if (!mergedConfig.clinicName || mergedConfig.clinicName === 'Apex Health Clinic') {
+          mergedConfig.clinicName = 'Dr. Abdul Muqeet Clinic';
+        }
+        if (!mergedConfig.doctorName || mergedConfig.doctorName === 'Dr. Sarah Mitchell') {
+          mergedConfig.doctorName = 'Dr. Abdul Muqeet';
+        }
+
+        const state: StoredData = {
           ...this.getDefaultState(),
           ...parsed,
-          config: {
-            ...this.getDefaultState().config,
-            ...(parsed.config || {})
-          }
+          config: mergedConfig,
         };
+        this.saveState(state);
+        return state;
       }
     } catch (err) {
       console.error('Error reading clinic_state.json, initializing fresh state:', err);
@@ -127,7 +138,7 @@ class QueueService {
 
     // Recently called (serving + completed/skipped), sorted descending by calledAt
     const recentlyCalled = this.data.tokens
-      .filter(t => t.calledAt && t.status !== 'waiting')
+      .filter(t => t.calledAt && t.status !== 'waiting' && t.status !== 'cancelled')
       .sort((a, b) => (b.calledAt || 0) - (a.calledAt || 0))
       .slice(0, 5);
 
@@ -149,8 +160,24 @@ class QueueService {
     };
   }
 
-  public generateToken(patientName?: string, priority: number = 0): { token: Token; queuePosition: number; estimatedWaitMinutes: number } {
+  public generateToken(
+    patientName: string,
+    phoneNumber: string,
+    department: string = 'General Consultation',
+    priority: number = 0
+  ): { token: Token; queuePosition: number; estimatedWaitMinutes: number } {
     this.checkDailyReset();
+
+    // Validation
+    const cleanName = (patientName || '').trim();
+    if (!cleanName) {
+      throw new Error('Patient name is required.');
+    }
+
+    const cleanPhone = (phoneNumber || '').replace(/\D/g, '');
+    if (cleanPhone.length !== 11) {
+      throw new Error('Phone number must be exactly 11 digits.');
+    }
 
     const assignedNumber = this.data.nextTokenNumber;
     this.data.nextTokenNumber += 1;
@@ -158,7 +185,9 @@ class QueueService {
     const newToken: Token = {
       id: `token_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       tokenNumber: assignedNumber,
-      patientName: patientName?.trim() || undefined,
+      patientName: cleanName,
+      phoneNumber: cleanPhone,
+      department: department?.trim() || 'General Consultation',
       priority: priority > 0 ? 1 : 0,
       status: 'waiting',
       createdAt: Date.now(),
@@ -167,7 +196,13 @@ class QueueService {
     this.data.tokens.push(newToken);
     this.saveState();
 
-    this.logAudit('TOKEN_GENERATED', { tokenNumber: assignedNumber, priority });
+    this.logAudit('TOKEN_GENERATED', { 
+      tokenNumber: assignedNumber, 
+      patientName: cleanName,
+      phoneNumber: cleanPhone,
+      department: newToken.department,
+      priority 
+    });
 
     const state = this.getState();
     const queuePosition = state.waitingList.findIndex(t => t.id === newToken.id) + 1;
@@ -178,6 +213,25 @@ class QueueService {
       queuePosition,
       estimatedWaitMinutes,
     };
+  }
+
+  public cancelToken(tokenId: string): Token | null {
+    const token = this.data.tokens.find(t => t.id === tokenId);
+    if (!token) return null;
+
+    if (token.status === 'waiting' || token.status === 'serving') {
+      token.status = 'cancelled';
+      token.completedAt = Date.now();
+      this.saveState();
+      this.logAudit('TOKEN_CANCELLED', { 
+        tokenNumber: token.tokenNumber, 
+        patientName: token.patientName,
+        tokenId 
+      });
+      return token;
+    }
+
+    return null;
   }
 
   public callNext(roomNumber?: string): Token | null {

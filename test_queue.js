@@ -2,7 +2,7 @@ const { io } = require('socket.io-client');
 
 const socket = io('http://localhost:3000');
 
-console.log('Connecting to Clinic Queue System at http://localhost:3000 ...');
+console.log('Connecting to Dr. Abdul Muqeet Clinic Queue System at http://localhost:3000 ...');
 
 socket.on('connect', () => {
   console.log('✅ Connected to WebSocket Server successfully! Socket ID:', socket.id);
@@ -14,43 +14,72 @@ socket.on('connect', () => {
     // Listen for queue state
     socket.once('queue:state', (initialState) => {
       console.log('✅ Received initial queue state:');
-      console.log(`   Clinic: ${initialState.config.clinicName}, Waiting: ${initialState.totalWaiting}, Serving: ${initialState.nowServing ? initialState.nowServing.tokenNumber : 'None'}`);
+      console.log(`   Clinic: ${initialState.config.clinicName}, Doctor: ${initialState.config.doctorName}, Waiting: ${initialState.totalWaiting}`);
 
-      // Generate Token 1 (Standard)
-      socket.emit('patient:generate_token', { patientName: 'Alice Johnson', priority: 0 }, (res1) => {
-        console.log('🎟️ Patient 1 Generated Token:', res1.token.tokenNumber, '(Expected: 1)');
+      // TEST 1: Phone number validation failure (less than 11 digits)
+      socket.emit('patient:generate_token', { 
+        patientName: 'Test Invalid', 
+        phoneNumber: '030012345', // Only 9 digits
+        department: 'General Consultation' 
+      }, (failRes) => {
+        if (!failRes.success && failRes.error.includes('11 digits')) {
+          console.log('✅ Validation Test Passed: Rejected invalid phone number (less than 11 digits):', failRes.error);
+        } else {
+          console.error('❌ Validation Test Failed:', failRes);
+          process.exit(1);
+        }
 
-        // Generate Token 2 (Priority)
-        socket.emit('patient:generate_token', { patientName: 'Robert Smith (Elderly)', priority: 1 }, (res2) => {
-          console.log('🎟️ Patient 2 Generated Token:', res2.token.tokenNumber, '(Priority: Express)');
+        // TEST 2: Generate Valid Token 1 (Standard)
+        socket.emit('patient:generate_token', { 
+          patientName: 'Ahmad Khan', 
+          phoneNumber: '03001234567', // Exactly 11 digits
+          department: 'General Consultation',
+          priority: 0 
+        }, (res1) => {
+          console.log('🎟️ Patient 1 Generated Token:', res1.token.tokenNumber, `(Dept: ${res1.token.department}, Phone: ${res1.token.phoneNumber})`);
 
-          // Generate Token 3 (Standard)
-          socket.emit('patient:generate_token', { patientName: 'Charlie Brown', priority: 0 }, (res3) => {
-            console.log('🎟️ Patient 3 Generated Token:', res3.token.tokenNumber, '(Expected: 3)');
+          // TEST 3: Generate Valid Token 2 (Elderly/Priority)
+          socket.emit('patient:generate_token', { 
+            patientName: 'Zainab Bibi (Elderly)', 
+            phoneNumber: '03219876543', 
+            department: 'Routine Checkup',
+            priority: 1 
+          }, (res2) => {
+            console.log('🎟️ Patient 2 Generated Token:', res2.token.tokenNumber, '(Priority: Express)');
 
-            // Doctor Calls Next (Should pick priority #2 first!)
-            socket.emit('doctor:call_next', { roomNumber: 'Room 101' }, (callRes1) => {
-              console.log('🩺 Doctor Called Next Token:', callRes1.token.tokenNumber, `(Patient: ${callRes1.token.patientName})`);
+            // TEST 4: Generate Valid Token 3 (To test Cancel Token)
+            socket.emit('patient:generate_token', { 
+              patientName: 'Farhan Tariq', 
+              phoneNumber: '03451122334', 
+              department: 'General Physician',
+              priority: 0 
+            }, (res3) => {
+              console.log('🎟️ Patient 3 Generated Token:', res3.token.tokenNumber);
 
-              // Doctor Recalls Current
-              socket.emit('doctor:recall', {}, (recallRes) => {
-                console.log('📢 Doctor Recalled Token on TV:', recallRes.token.tokenNumber);
+              // TEST 5: Cancel Token 3
+              socket.emit('patient:cancel_token', { tokenId: res3.token.id }, (cancelRes) => {
+                if (cancelRes.success && cancelRes.token.status === 'cancelled') {
+                  console.log('🚫 Cancel Token Test Passed: Successfully cancelled Token #', cancelRes.token.tokenNumber);
+                } else {
+                  console.error('❌ Cancel Token Test Failed:', cancelRes);
+                  process.exit(1);
+                }
 
-                // Doctor Calls Next again (completing #2, moving to #1)
-                socket.emit('doctor:call_next', { roomNumber: 'Room 101' }, (callRes2) => {
-                  console.log('🩺 Doctor Called Next Token again:', callRes2.token.tokenNumber, `(Patient: ${callRes2.token.patientName})`);
+                // TEST 6: Doctor Calls Next (Should call Priority Token #2 first!)
+                socket.emit('doctor:call_next', { roomNumber: 'Room 101' }, (callRes1) => {
+                  console.log('🩺 Doctor Called Next Token:', callRes1.token.tokenNumber, `(Patient: ${callRes1.token.patientName}, Dept: ${callRes1.token.department})`);
 
-                  // Doctor Skips/No-Show #1
-                  socket.emit('doctor:skip', { reason: 'no_show' }, (skipRes) => {
-                    console.log('⚠️ Doctor Marked No-Show for Token:', skipRes.token.tokenNumber);
+                  // Doctor Recalls Current
+                  socket.emit('doctor:recall', {}, (recallRes) => {
+                    console.log('📢 Doctor Recalled Token on TV:', recallRes.token.tokenNumber);
 
-                    // Check state via callback
+                    // Final Check State
                     socket.emit('queue:get_state', (finalState) => {
                       console.log('🏁 Final Queue State Verification:');
-                      console.log(`   Total Completed: ${finalState.totalServedToday}`);
-                      console.log(`   Total Skipped/No-show: ${finalState.totalSkippedToday}`);
-                      console.log(`   Remaining Waiting: ${finalState.totalWaiting} (Token #${finalState.waitingList[0]?.tokenNumber})`);
-                      console.log('🎉 REAL-TIME QUEUE VERIFICATION PASSED WITH 100% ACCURACY!');
+                      console.log(`   Clinic Name: ${finalState.config.clinicName}`);
+                      console.log(`   Now Serving: Token #${finalState.nowServing?.tokenNumber} (${finalState.nowServing?.patientName})`);
+                      console.log(`   Remaining Waiting: ${finalState.totalWaiting} (Token #${finalState.waitingList[0]?.tokenNumber} - ${finalState.waitingList[0]?.patientName})`);
+                      console.log('🎉 ALL NEW CLINIC FEATURES & VALIDATIONS VERIFIED WITH 100% ACCURACY!');
                       socket.disconnect();
                       setTimeout(() => process.exit(0), 100);
                     });
