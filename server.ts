@@ -7,7 +7,7 @@ import { queueService } from './src/db/queueService';
 
 const isDevScript = process.env.npm_lifecycle_event === 'dev' || process.argv.includes('--dev');
 const dev = process.env.NODE_ENV ? process.env.NODE_ENV !== 'production' : isDevScript;
-const hostname = process.env.HOSTNAME || '0.0.0.0';
+const hostname = '0.0.0.0';
 const port = parseInt(process.env.PORT || '3000', 10);
 
 const app = next({ dev, hostname, port });
