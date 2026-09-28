@@ -5,8 +5,9 @@ import { Server as SocketIOServer } from 'socket.io';
 import { setupSocketHandlers } from './src/socket/socketHandler';
 import { queueService } from './src/db/queueService';
 
-const dev = process.env.NODE_ENV !== 'production';
-const hostname = '0.0.0.0';
+const isDevScript = process.env.npm_lifecycle_event === 'dev' || process.argv.includes('--dev');
+const dev = process.env.NODE_ENV ? process.env.NODE_ENV !== 'production' : isDevScript;
+const hostname = process.env.HOSTNAME || '0.0.0.0';
 const port = parseInt(process.env.PORT || '3000', 10);
 
 const app = next({ dev, hostname, port });
@@ -44,9 +45,11 @@ app.prepare().then(() => {
 
   setupSocketHandlers(io);
 
-  server.listen(port, () => {
+  server.listen(port, hostname, () => {
     console.log(`\n======================================================`);
     console.log(`🏥 CLINIC QUEUE SYSTEM IS READY!`);
+    console.log(`> Environment:          ${dev ? 'development' : 'production'}`);
+    console.log(`> Listening on:         http://${hostname}:${port}`);
     console.log(`> Local Network Server: http://localhost:${port}`);
     console.log(`> Patient View:         http://localhost:${port}/patient`);
     console.log(`> Doctor Dashboard:     http://localhost:${port}/doctor`);

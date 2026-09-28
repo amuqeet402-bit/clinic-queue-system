@@ -1,8 +1,9 @@
 const { io } = require('socket.io-client');
 
-const socket = io('http://localhost:3000');
+const port = process.env.PORT || 3000;
+const socket = io(`http://localhost:${port}`);
 
-console.log('Connecting to Dr. Abdul Muqeet Clinic Queue System at http://localhost:3000 ...');
+console.log(`Connecting to Dr. Abdul Muqeet Clinic Queue System at http://localhost:${port} ...`);
 
 socket.on('connect', () => {
   console.log('✅ Connected to WebSocket Server successfully! Socket ID:', socket.id);
